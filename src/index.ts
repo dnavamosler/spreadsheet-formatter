@@ -1,7 +1,6 @@
 var jwt = require('jwt-simple');
 import axios from 'axios';
-const moment = require('moment');
-
+import * as moment from 'moment';
 interface Payload {
   iss: string;
   scope: string;
