@@ -1,6 +1,6 @@
-var jwt = require('jwt-simple');
-const axios = require('axios');
-const dayjs = require('dayjs');
+import * as jose from 'jose';
+import axios from 'axios';
+import dayjs from 'dayjs';
 
 const googleSpreadsheetsApi = 'https://sheets.googleapis.com/v4/spreadsheets/';
 const googleApiToken = 'https://oauth2.googleapis.com/token';
@@ -32,23 +32,33 @@ class spredSheetFormatter {
       iat: date.unix()
     };
 
-    // var token = sign(payload, this.secret, { algorithm: 'RS256' });
-    const alg = 'RS256';
-    const token = jwt.encode(payload, this.secret, alg);
+    // const token = jwt.sign(payload, this.secret, { algorithm: "RS256" });
 
+    const alg = 'RS256';
+
+    const secret = await jose.importPKCS8(this.secret, alg);
+
+    const token = await new jose.SignJWT(payload)
+      .setProtectedHeader({ alg })
+      .setExpirationTime('1h')
+      .sign(secret);
     const oAuthPayload = {
       grant_type: grantType,
       assertion: token
     };
 
-    return axios
-      .post(googleApiToken, oAuthPayload)
-      .then((res) => {
-        this.token = res.data.access_token;
-      })
-      .catch((err) => {
-        this.token = null;
-      });
+    return new Promise((resolve, reject) => {
+      axios
+        .post(googleApiToken, oAuthPayload)
+        .then((res) => {
+          this.token = res.data.access_token;
+          resolve(res.data.access_token);
+        })
+        .catch(() => {
+          this.token = null;
+          reject('error no auth');
+        });
+    });
   }
   async checkAuthentication() {
     if (!this.secret || !this.account) {
@@ -64,6 +74,7 @@ class spredSheetFormatter {
   }
   async getPageSpreadSheet(spreadSheetId, pageTitle, pageId, asObject = true) {
     await this.checkAuthentication();
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
         const spreadSheetData = await axios
@@ -80,7 +91,7 @@ class spredSheetFormatter {
             }
           )
           .then((e) => e.data)
-          .catch((e) => {
+          .catch(() => {
             throw new Error('Error no fetch spreadsheet data!!');
           });
         const values = spreadSheetData.values;
@@ -136,6 +147,7 @@ class spredSheetFormatter {
       console.error('Please set the config!!');
       return;
     }
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
         const spreadSheetData = await axios
@@ -145,7 +157,7 @@ class spredSheetFormatter {
             }
           })
           .then((e) => e.data)
-          .catch((e) => {
+          .catch(() => {
             throw new Error('Error no fetch spreadsheet data!!');
           });
 
@@ -177,4 +189,4 @@ class spredSheetFormatter {
 
 const spreadSheet = new spredSheetFormatter();
 
-module.exports = spreadSheet;
+export default spreadSheet;
