@@ -1,4 +1,4 @@
-import { sign } from 'jsonwebtoken';
+var jwt = require('jwt-simple');
 import axios from 'axios';
 const moment = require('moment');
 
@@ -44,8 +44,7 @@ class spredSheetFormatter {
       exp: expDate.unix(),
       iat: date.unix()
     };
-
-    const token = sign(payload, this.#secret, { algorithm: 'RS256' });
+    var token = jwt.encode(payload, this.#secret, 'RS256');
 
     const oAuthPayload = {
       grant_type: grantType,
