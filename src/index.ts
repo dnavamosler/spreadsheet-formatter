@@ -74,7 +74,12 @@ class spredSheetFormatter {
       await this.createJWT();
     }
   }
-  async getPageSpreadSheet(spreadSheetId: string, pageTitle: string) {
+  async getPageSpreadSheet(
+    spreadSheetId: string,
+    pageTitle: string,
+    pageId: string,
+    asObject: boolean = true
+  ) {
     await this.checkAuthentication();
     return new Promise(async (resolve, reject) => {
       try {
@@ -101,16 +106,42 @@ class spredSheetFormatter {
           throw new Error('Metadatasheet has no values!!');
         }
 
-        let metaData = {};
-        values.forEach(([title, description]: [string, string]) => {
-          if (title)
-            metaData = {
-              ...metaData,
-              [title.toLowerCase().split(' ').join('-')]: description
-            };
+        let metaDataObject = {};
+        let metaDataArray: any[] = [];
+        values.forEach(([title, description]: [string, string], index: any) => {
+          if (title) {
+            if (asObject) {
+              metaDataObject = {
+                ...metaDataObject,
+                [title.toLowerCase().split(' ').join('-')]: description
+              };
+            } else {
+              const haveError =
+                description?.search('#REF!') === 0 || !description
+                  ? true
+                  : false;
+              const errorMessage = `Error in: https://docs.google.com/spreadsheets/d/${spreadSheetId}/edit#gid=${pageId} in row ${
+                index + 1
+              }`;
+              if (haveError) {
+                console.error(errorMessage);
+              }
+              metaDataArray.push({
+                row: index + 1,
+                key: title.toLowerCase().split(' ').join('-'),
+                value: description,
+                error: haveError,
+                errorDescription: haveError ? errorMessage : undefined
+              });
+            }
+          }
         });
 
-        resolve(metaData);
+        resolve(
+          asObject
+            ? metaDataObject
+            : metaDataArray.filter((el) => el.key !== 'ignore')
+        );
       } catch (error) {
         reject(error);
       }
@@ -145,7 +176,11 @@ class spredSheetFormatter {
         }
 
         const title = metadataSheet.properties.title;
-        const metaData = await this.getPageSpreadSheet(spreadSheetId, title);
+        const metaData = await this.getPageSpreadSheet(
+          spreadSheetId,
+          title,
+          metadataId
+        );
 
         const DATA = { sheets, metaData };
 
