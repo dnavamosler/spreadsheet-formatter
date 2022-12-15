@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
+var jwt = require('jwt-simple');
 const axios = require('axios');
-const moment = require('moment');
+const dayjs = require('dayjs');
 
 const googleSpreadsheetsApi = 'https://sheets.googleapis.com/v4/spreadsheets/';
 const googleApiToken = 'https://oauth2.googleapis.com/token';
@@ -9,29 +9,32 @@ const grantType = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
 
 class spredSheetFormatter {
   constructor() {
-    this.#token = null;
-    this.#expDate = null;
-    this.#account = null;
-    this.#secret = 'null';
+    this.token = null;
+    this.expDate = null;
+    this.account = null;
+    this.secret = 'null';
   }
   setConfig(secret, account) {
-    this.#secret = secret;
-    this.#account = account;
+    this.secret = secret;
+    this.account = account;
   }
-  createJWT() {
-    const date = moment();
-    const expDate = moment(date).add({
+  async createJWT() {
+    const date = dayjs();
+    const expDate = dayjs(date).add({
       hours: 1
     });
-    this.#expDate = expDate;
+    this.expDate = expDate;
     const payload = {
-      iss: this.#account,
+      iss: this.account,
       scope: googleApiDrive,
       aud: googleApiToken,
       exp: expDate.unix(),
       iat: date.unix()
     };
-    var token = jwt.sign(payload, this.#secret, { algorithm: 'RS256' });
+
+    // var token = sign(payload, this.secret, { algorithm: 'RS256' });
+    const alg = 'RS256';
+    const token = jwt.encode(payload, this.secret, alg);
 
     const oAuthPayload = {
       grant_type: grantType,
@@ -41,22 +44,21 @@ class spredSheetFormatter {
     return axios
       .post(googleApiToken, oAuthPayload)
       .then((res) => {
-        this.#token = res.data.access_token;
+        this.token = res.data.access_token;
       })
       .catch((err) => {
-        this.#token = null;
-        console.error(err);
+        this.token = null;
       });
   }
   async checkAuthentication() {
-    if (!this.#secret || !this.#account) {
-      this.#token = null;
+    if (!this.secret || !this.account) {
+      this.token = null;
       return;
     }
-    if (!this.#token) {
+    if (!this.token) {
       await this.createJWT();
     }
-    if (this.#token && moment(this.#expDate).isAfter(moment(), 'seconds')) {
+    if (this.token && dayjs(this.expDate).isAfter(dayjs(), 'seconds')) {
       await this.createJWT();
     }
   }
@@ -73,7 +75,7 @@ class spredSheetFormatter {
               '!A1:AZ9999',
             {
               headers: {
-                Authorization: `Bearer ${this.#token}`
+                Authorization: `Bearer ${this.token}`
               }
             }
           )
@@ -130,7 +132,7 @@ class spredSheetFormatter {
   }
   async getSpreadSheet(spreadSheetId, metadataId) {
     await this.checkAuthentication();
-    if (!this.#token) {
+    if (!this.token) {
       console.error('Please set the config!!');
       return;
     }
@@ -139,7 +141,7 @@ class spredSheetFormatter {
         const spreadSheetData = await axios
           .get(googleSpreadsheetsApi + spreadSheetId, {
             headers: {
-              Authorization: `Bearer ${this.#token}`
+              Authorization: `Bearer ${this.token}`
             }
           })
           .then((e) => e.data)
@@ -175,4 +177,4 @@ class spredSheetFormatter {
 
 const spreadSheet = new spredSheetFormatter();
 
-export const SpreadSheetFormatter = spreadSheet;
+module.exports = spreadSheet;
