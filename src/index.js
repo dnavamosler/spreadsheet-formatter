@@ -1,6 +1,6 @@
-import * as jwt from 'jsonwebtoken';
-import axios from 'axios';
-import * as moment from 'moment';
+const jwt = require('jsonwebtoken');
+const axios = require('axios');
+const moment = require('moment');
 
 const googleSpreadsheetsApi = 'https://sheets.googleapis.com/v4/spreadsheets/';
 const googleApiToken = 'https://oauth2.googleapis.com/token';
@@ -8,22 +8,17 @@ const googleApiDrive = 'https://www.googleapis.com/auth/drive';
 const grantType = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
 
 class spredSheetFormatter {
-  #token: string | null;
-  #expDate: any;
-  #account: string | null;
-  #secret: any;
-
   constructor() {
     this.#token = null;
     this.#expDate = null;
     this.#account = null;
     this.#secret = 'null';
   }
-  setConfig(secret: string, account: string) {
+  setConfig(secret, account) {
     this.#secret = secret;
     this.#account = account;
   }
-  private createJWT() {
+  createJWT() {
     const date = moment();
     const expDate = moment(date).add({
       hours: 1
@@ -45,15 +40,15 @@ class spredSheetFormatter {
 
     return axios
       .post(googleApiToken, oAuthPayload)
-      .then((res: any) => {
+      .then((res) => {
         this.#token = res.data.access_token;
       })
-      .catch((err: any) => {
+      .catch((err) => {
         this.#token = null;
         console.error(err);
       });
   }
-  private async checkAuthentication() {
+  async checkAuthentication() {
     if (!this.#secret || !this.#account) {
       this.#token = null;
       return;
@@ -65,12 +60,7 @@ class spredSheetFormatter {
       await this.createJWT();
     }
   }
-  async getPageSpreadSheet(
-    spreadSheetId: string,
-    pageTitle: string,
-    pageId: string,
-    asObject: boolean = true
-  ) {
+  async getPageSpreadSheet(spreadSheetId, pageTitle, pageId, asObject = true) {
     await this.checkAuthentication();
     return new Promise(async (resolve, reject) => {
       try {
@@ -87,8 +77,8 @@ class spredSheetFormatter {
               }
             }
           )
-          .then((e: any) => e.data)
-          .catch((e: any) => {
+          .then((e) => e.data)
+          .catch((e) => {
             throw new Error('Error no fetch spreadsheet data!!');
           });
         const values = spreadSheetData.values;
@@ -98,8 +88,8 @@ class spredSheetFormatter {
         }
 
         let metaDataObject = {};
-        let metaDataArray: any[] = [];
-        values.forEach(([title, description]: [string, string], index: any) => {
+        let metaDataArray = [];
+        values.forEach(([title, description], index) => {
           if (title) {
             if (asObject) {
               metaDataObject = {
@@ -138,7 +128,7 @@ class spredSheetFormatter {
       }
     });
   }
-  async getSpreadSheet(spreadSheetId: string, metadataId: string) {
+  async getSpreadSheet(spreadSheetId, metadataId) {
     await this.checkAuthentication();
     if (!this.#token) {
       console.error('Please set the config!!');
@@ -152,14 +142,14 @@ class spredSheetFormatter {
               Authorization: `Bearer ${this.#token}`
             }
           })
-          .then((e: any) => e.data)
-          .catch((e: any) => {
+          .then((e) => e.data)
+          .catch((e) => {
             throw new Error('Error no fetch spreadsheet data!!');
           });
 
         const sheets = spreadSheetData.sheets;
         const metadataSheet = sheets.find(
-          (sheet: any) => sheet.properties?.sheetId == metadataId
+          (sheet) => sheet.properties?.sheetId == metadataId
         );
 
         if (!metadataSheet) {
