@@ -1,13 +1,6 @@
-var jwt = require('jwt-simple');
+import * as jwt from 'jsonwebtoken';
 import axios from 'axios';
 import * as moment from 'moment';
-interface Payload {
-  iss: string;
-  scope: string;
-  aud: string;
-  exp: number;
-  iat: number;
-}
 
 const googleSpreadsheetsApi = 'https://sheets.googleapis.com/v4/spreadsheets/';
 const googleApiToken = 'https://oauth2.googleapis.com/token';
@@ -43,7 +36,7 @@ class spredSheetFormatter {
       exp: expDate.unix(),
       iat: date.unix()
     };
-    var token = jwt.encode(payload, this.#secret, 'RS256');
+    var token = jwt.sign(payload, this.#secret, { algorithm: 'RS256' });
 
     const oAuthPayload = {
       grant_type: grantType,
@@ -52,10 +45,10 @@ class spredSheetFormatter {
 
     return axios
       .post(googleApiToken, oAuthPayload)
-      .then((res) => {
+      .then((res: any) => {
         this.#token = res.data.access_token;
       })
-      .catch((err) => {
+      .catch((err: any) => {
         this.#token = null;
         console.error(err);
       });
@@ -94,8 +87,8 @@ class spredSheetFormatter {
               }
             }
           )
-          .then((e) => e.data)
-          .catch((e) => {
+          .then((e: any) => e.data)
+          .catch((e: any) => {
             throw new Error('Error no fetch spreadsheet data!!');
           });
         const values = spreadSheetData.values;
@@ -159,8 +152,8 @@ class spredSheetFormatter {
               Authorization: `Bearer ${this.#token}`
             }
           })
-          .then((e) => e.data)
-          .catch((e) => {
+          .then((e: any) => e.data)
+          .catch((e: any) => {
             throw new Error('Error no fetch spreadsheet data!!');
           });
 
