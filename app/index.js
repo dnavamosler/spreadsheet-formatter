@@ -162,8 +162,8 @@ class spredSheetFormatter {
         metaDataArray = metaDataArray.filter((el) => el.key !== 'ignore');
 
         // Procesamiento de listas / chunks
-        metaDataArray = cutChunks(metaDataArray, 'ul');
-        metaDataArray = cutChunks(metaDataArray, 'ol');
+        metaDataArray = this.cutChunks(metaDataArray, 'ul');
+        metaDataArray = this.cutChunks(metaDataArray, 'ol');
 
         resolve(asObject ? metaDataObject : metaDataArray);
       } catch (error) {
