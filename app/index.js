@@ -89,7 +89,8 @@ class spredSheetFormatter {
               value: temporalList,
               error: false,
               errorDescription: undefined
-            }
+            },
+            list[index]
           ];
           temporalList = [];
         } else {
@@ -97,6 +98,7 @@ class spredSheetFormatter {
         }
       }
     }
+
     return newList;
   }
   async getPageSpreadSheet(spreadSheetId, pageTitle, pageId, asObject = true) {
