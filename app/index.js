@@ -173,6 +173,40 @@ class spredSheetFormatter {
       }
     });
   }
+  async getOriginalPageSpreadSheet(spreadSheetId, pageTitle, pageId) {
+    await this.checkAuthentication();
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async (resolve, reject) => {
+      try {
+        const spreadSheetData = await axios
+          .get(
+            googleSpreadsheetsApi +
+              spreadSheetId +
+              '/values/' +
+              pageTitle +
+              '!A1:AZ9999',
+            {
+              headers: {
+                Authorization: `Bearer ${this.token}`
+              }
+            }
+          )
+          .then((e) => e.data)
+          .catch(() => {
+            throw new Error('Error no fetch spreadsheet data!!');
+          });
+        const values = spreadSheetData.values;
+
+        if (!values) {
+          throw new Error('Metadatasheet has no values!!');
+        }
+
+        resolve(values);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
   async getSpreadSheet(spreadSheetId, metadataId) {
     await this.checkAuthentication();
     if (!this.token) {
